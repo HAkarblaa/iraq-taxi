@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#102c37">
+<meta name="description" content="تكسي العراق لطلب الرحلات ومتابعتها بين الزبون والسائق.">
+<title>تكسي العراق — رحلتك تبدأ هنا</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+<script defer src="vendor/leaflet.js"></script>
+<script defer src="vendor/supabase.js"></script>
+<script defer src="config.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<header class="topbar">
+ <a href="#book" class="brand" data-view="book"><span class="brand-icon">🚕</span><span>تكسي العراق<small>خطوة واحدة، وتبدأ رحلتك</small></span></a>
+ <nav class="desktop-nav" aria-label="التنقل الرئيسي">
+  <button data-view="book" class="selected">اطلب رحلة</button><button data-view="orders">طلباتي</button><button data-view="driver">أنا سائق</button><button data-view="admin" class="admin-only" hidden>الإدارة</button>
+ </nav>
+ <div class="header-actions"><span id="connectionBadge" class="connection">بانتظار الربط</span><button id="accountButton" class="avatar-button" data-action="account">دخول / تسجيل</button></div>
+</header>
+<main class="shell">
+ <aside id="setupNotice" class="notice" hidden><strong>الخدمة قيد الإعداد</strong><span>يمكنك استعراض الخريطة والتقدير الأولي. استقبال الطلبات يتفعّل بعد ربط قاعدة البيانات.</span></aside>
+ <section data-page="book" class="page">
+  <div class="page-heading"><div><p class="eyebrow">مشوارك القادم</p><h1>إلى وين اليوم؟</h1><p>حدّد مكانك والوجهة، وخلي الباقي علينا.</p></div><span class="pill">الدفع نقدًا للسائق</span></div>
+  <div class="booking-grid">
+   <div class="booking-column">
+    <section id="currentRide" class="card" hidden></section>
+    <section class="card booking-card" id="bookingFields">
+     <div class="card-title"><h2>رتّب رحلتك</h2><span class="step-label">نقطتان على الخريطة</span></div>
+     <label class="field">المحافظة<select id="regionSelect"></select></label>
+     <div class="map-mode" role="group" aria-label="اختيار نقطة الخريطة"><button data-map-mode="pickup" class="active">A · نقطة الانطلاق</button><button data-map-mode="destination">B · الوجهة</button></div>
+     <div class="route-field"><span class="route-dot pickup-dot">A</span><label>من وين؟<input id="pickup" maxlength="200" placeholder="اضغط مكان الانطلاق على الخريطة" autocomplete="off"></label><button type="button" class="icon-button" data-action="locate" aria-label="استخدم موقعي">⌖</button></div>
+     <div class="route-field"><span class="route-dot destination-dot">B</span><label>لوين؟<input id="destination" maxlength="200" placeholder="اضغط وجهتك على الخريطة" autocomplete="off"></label><button type="button" class="icon-button" data-action="clear-route" aria-label="مسح النقطتين">×</button></div>
+     <h3 class="small-heading">اختَر نوع السيارة</h3>
+     <div class="service-options"><button data-service="economy" class="service active"><span>🚕</span><div><strong>اقتصادي</strong><small>مشاويرك اليومية</small></div><b>4 مقاعد</b></button><button data-service="comfort" class="service"><span>🚘</span><div><strong>مريح</strong><small>مساحة وراحة أكثر</small></div><b>4 مقاعد</b></button></div>
+     <div class="fare-box"><div><small>أجرة تقديرية</small><strong id="fareValue">— <em>د.ع</em></strong></div><span id="distanceValue">حدّد نقطتي الرحلة</span></div>
+     <p class="fine-print">التقدير حسب المسافة المباشرة بين النقطتين. أكّد السعر مع السائق قبل بدء الرحلة.</p>
+     <button id="bookButton" class="button primary full" data-action="book">تأكيد طلب الرحلة <span>←</span></button>
+     <p id="bookingHelp" class="muted centered">تظهر حالة الطلب في «طلباتي» بعد تأكيد الإرسال.</p>
+    </section>
+    <div class="trust-row"><span>✓ بيانات الرحلة محمية</span><span>✓ سائقون بموافقة الإدارة</span></div>
+   </div>
+   <section class="map-card"><div id="customerMap" aria-label="خريطة اختيار الانطلاق والوجهة"></div><div class="map-tip" id="mapTip"><b>A</b> اضغط مكان الانطلاق على الخريطة</div><div class="map-bottom"><span class="live-dot"></span> حدّد الموقع بدقة قبل الطلب <button data-action="fit-route">عرض النقطتين</button></div></section>
+  </div>
+ </section>
+ <section data-page="orders" class="page" hidden><div class="page-heading"><div><p class="eyebrow">كل مشاويرك بمكان واحد</p><h1>طلباتي</h1><p>تابع السائق وحالة رحلتك.</p></div><button class="button outline" data-action="refresh">↻ تحديث</button></div><div id="customerOrdersList" class="ride-list"></div></section>
+ <section data-page="driver" class="page" hidden>
+  <div class="page-heading"><div><p class="eyebrow">شريك الطريق</p><h1>لوحة السائق</h1><p>طلبات محافظتك، ورحلتك الحالية، وحصيلتك.</p></div><button id="onlineToggle" class="button outline" data-action="online">غير متصل</button></div>
+  <div id="driverGate" class="notice" hidden></div>
+  <div id="driverContent" hidden>
+   <div class="stats-grid"><article><small>رحلات مكتملة</small><strong id="statTrips">—</strong></article><article><small>قيمة رحلات اليوم</small><strong id="statToday">—</strong></article><article><small>قيمة الرحلات المكتملة</small><strong id="statEarnings">—</strong></article></div>
+   <div class="driver-grid"><div><section class="card"><h2>رحلتك الحالية</h2><div id="driverCurrentOrder"></div></section><section class="card location-card"><div><h3>مشاركة موقعي أثناء العمل</h3><p>اختياري. يشوفه زبون الرحلة الحالية أثناء فتح الصفحة.</p></div><input id="shareLocation" type="checkbox" aria-label="مشاركة موقع السائق"></section><div id="driverMap" class="driver-map" aria-label="خريطة السائق"></div></div><section class="card"><div class="card-title"><h2>طلبات متاحة</h2><span class="pill" id="driverRegionLabel"></span></div><div id="driverAvailableOrders"></div></section></div>
+   <section class="card history-card"><h2>سجل الرحلات <small class="muted">آخر 100 رحلة</small></h2><div id="driverHistory" class="ride-list"></div></section>
+  </div>
+ </section>
+ <section data-page="profile" class="page" hidden><div class="page-heading"><div><p class="eyebrow">حسابك</p><h1>ملفي الشخصي</h1></div><button class="button outline" data-action="logout">تسجيل خروج</button></div><div id="profileGate"></div><form id="profileForm" class="card profile-form" hidden><p id="profileRole" class="pill"></p><label class="field">الاسم الكامل<input name="full_name" maxlength="80" required minlength="2" autocomplete="name"></label><label class="field">رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" maxlength="20" required autocomplete="tel"></label><label class="field">المحافظة<select name="governorate" class="region-select"></select></label><div id="vehicleFields"><label class="field">نوع وموديل السيارة<input name="car_make" maxlength="80" placeholder="مثل تويوتا كورولا 2022"></label><label class="field">رقم لوحة السيارة<input name="plate" maxlength="30"></label></div><button class="button primary full" type="submit">حفظ التغييرات</button><button class="text-button danger" type="button" data-action="delete-account">طلب حذف حسابي وبياناتي</button></form></section>
+ <section data-page="admin" class="page" hidden><div class="page-heading"><div><p class="eyebrow">إدارة الخدمة</p><h1>لوحة الإدارة</h1></div><button class="button outline" data-action="refresh">↻ تحديث</button></div><div id="adminGate"></div><div id="adminContent" hidden><div class="stats-grid"><article><small>طلبات نشطة</small><strong id="adminActive">—</strong></article><article><small>حسابات السائقين</small><strong id="adminDrivers">—</strong></article><article><small>بانتظار الموافقة</small><strong id="adminPending">—</strong></article></div><div class="admin-grid"><section class="card"><h2>حسابات السائقين</h2><div id="adminDriversList"></div></section><section class="card"><h2>إعداد التسعيرات</h2><p class="muted">تسعيرة تقديرية للمشاوير الجديدة بالدينار العراقي.</p><div id="faresEditor"></div></section></div><section class="card"><h2>طلبات حذف الحساب</h2><div id="deletionRequests"></div></section><section class="card"><h2>آخر 100 طلب</h2><div id="adminRides" class="ride-list"></div></section></div></section>
+ <footer class="site-footer"><span>تكسي العراق · خدمة طلب الرحلات</span><a href="privacy-policy.html">الخصوصية وحذف البيانات</a><a href="mailto:mnthrahmed9@gmail.com">تواصل مع الإدارة</a></footer>
+</main>
+<nav class="mobile-nav" aria-label="التنقل السفلي"><button data-view="book">⌖<span>اطلب رحلة</span></button><button data-view="orders">▤<span>طلباتي</span></button><button data-view="driver">🚕<span>السائق</span></button><button data-view="profile">◉<span>حسابي</span></button></nav>
+<dialog id="authDialog" class="auth-dialog"><div class="auth-top"><span class="brand-icon">🚕</span><button class="icon-button" data-action="close-auth" aria-label="إغلاق">×</button></div><h2 id="authTitle">أهلًا برجعتك</h2><p id="authSubtitle" class="muted">سجّل دخولك حتى تطلب وتتابع الرحلة.</p><div id="authTabs" class="auth-tabs"><button data-auth-mode="login" class="active">تسجيل دخول</button><button data-auth-mode="signup">حساب جديد</button></div><form id="authForm"><div id="signupFields" hidden><div class="role-options"><label><input type="radio" name="role" value="customer" checked> أنا زبون</label><label><input type="radio" name="role" value="driver"> أنا سائق</label></div><label class="field">اسمك<input name="full_name" maxlength="80" minlength="2" autocomplete="name"></label><label class="field">رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" maxlength="20" autocomplete="tel"></label><label class="field">المحافظة<select name="governorate" class="region-select"></select></label><div id="signupVehicle" hidden><label class="field">نوع وموديل السيارة<input name="car_make" maxlength="80"></label><label class="field">رقم اللوحة<input name="plate" maxlength="30"></label><p class="fine-print">حساب السائق يتفعّل بعد موافقة الإدارة.</p></div></div><label class="field" id="emailField">البريد الإلكتروني<input name="email" type="email" dir="ltr" autocomplete="email"></label><label class="field" id="passwordField">كلمة المرور<input name="password" type="password" minlength="8" autocomplete="current-password"></label><button type="submit" id="authSubmit" class="button primary full">دخول</button><button type="button" class="text-button" data-action="forgot-password" id="forgotPassword">نسيت كلمة المرور؟</button><p class="fine-print">بإنشاء الحساب تقرّ باطلاعك على <a href="privacy-policy.html">سياسة الخصوصية</a>.</p></form><p id="authMessage" role="status" class="form-message"></p></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
